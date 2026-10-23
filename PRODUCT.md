@@ -1,52 +1,43 @@
-# bookchaowalit-services-frontend — Product brief
+# Service Ledger — Product truth
 
-**Slug:** `bookchaowalit-website/bookchaowalit-services-frontend`  
-**Generated:** 2026-08-11 (bulk Book Dev closeout)  
-**Status:** starter / portfolio boundary
+> Inferred from the code and copy (no user interview). Checked against the portfolio card claims review
+> (`portfolio-site-web/docs/audits/CARD-CLAIMS-REVIEW-2026-10.md`, row `services`, evidence Prototype) on 2026-10-23.
 
-## Purpose
+## What it is
 
-Portfolio repository under Book Dev. This brief records ownership and the
-current honest status so the nested tree is not an empty shell in the task
-system.
+A client-side list of service offerings, seeded with three authored sample lines.
 
-## Runnable path
+## Who it is for
 
-See `README.md` for install and run instructions when present.
+A portfolio visitor who wants to see a small catalog-editing UI.
 
-## Limits
+## What works today
 
-- Not claimed as production-ready unless README and tests prove it.
-- Mobile smoke / emulator acceptance is separate and toolchain-dependent.
+1. Add a line (name required; details and state optional). New lines go on top.
+2. Search name, details or state (case-insensitive, surrounding spaces ignored) and filter by All, Available, Draft or
+   Paused. Counters show lines, available and showing.
+3. Remove a line. Lines persist in this browser's localStorage; corrupt or wrongly shaped stored data falls back to
+   the sample instead of crashing the page.
+4. `/api/mcp` answers JSON-RPC with `get_all`, `get_by_id` and `search` over the sample lines only.
+5. Front-end and server errors go to Sentry (errors only, personal data stripped) when `NEXT_PUBLIC_SENTRY_DSN` is set.
 
-## Source README excerpt
+## What does not work (and must not be claimed)
 
-```
+- No tiered pricing, add-ons, booking request form, FAQs or inquiry-to-proposal flow (claims removed from the
+  portfolio card in the 2026-10 review). The page says "No checkout, account, or remote catalog".
+- No editing of an existing line other than removing it. No sync or export. No product analytics beyond Vercel
+  Analytics.
 
-## Current product truth
+## Live URL and deploy state
 
-- Browser-local CRUD list for service name, details, and state.
-- Search and state filters operate on the in-browser catalog.
-- No remote catalog, checkout, account, or multi-tenant service backend.
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+- Live: https://services.bookchaowalit.com (HTTP 200 on 2026-10-23).
+- The Vercel project `bookchaowalit-services-frontend` is deployed only by CLI (last production 2026-10-23 12:26, CLI
+  deploy of commit c6caf1e, the Next 16.4.2 security patch) and its Git link names the old repository
+  `bookchaowalit/bookchaowalit-services-frontend`, so a push to `main` does not deploy. The live site lags `main`
+  (template MCP route, no storage validation, no Sentry) until the owner reconnects Vercel Git to this repository
+  (owner action D9). `NEXT_PUBLIC_SENTRY_DSN` is already set on the Vercel project (Sentry project
+  `marketing-services-web`, org `personal-yu0`).
 
-## Getting Started
+## Boundaries
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize an
-```
+- Browser-only apart from the stateless `/api/mcp` route.
