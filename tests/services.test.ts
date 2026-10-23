@@ -18,7 +18,8 @@ describe("parseServices", () => {
 
 describe("filterServices", () => {
   it("matches name, details and state, ignoring case and surrounding spaces", () => {
-    // Regression: the query was not trimmed, so "audit " found nothing.
+    // Regression: the query was not trimmed, so "draft " missed the Draft line (its state is the last word matched).
+    expect(filterServices(SEED, "All", "draft ").map((s) => s.id)).toEqual(["service-3"]);
     expect(filterServices(SEED, "All", " AUDIT ").map((s) => s.id)).toEqual(["service-2"]);
     expect(filterServices(SEED, "All", "draft").map((s) => s.id)).toEqual(["service-3"]);
   });
