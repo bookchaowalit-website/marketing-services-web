@@ -16,10 +16,18 @@ export default function Home() {
   const [removed, setRemoved] = useState<{ item: Service; index: number } | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
+  const newRef = useRef<HTMLButtonElement>(null);
+  const wasComposing = useRef(false);
   const visible = useMemo(() => filterServices(services, filter, query), [filter, query, services]);
   const countOf = (status: StatusFilter) => (status === "All" ? services.length : services.filter((item) => item.status === status).length);
 
-  useEffect(() => { if (composing) nameRef.current?.focus(); }, [composing]);
+  // Opening the composer focuses its first field; closing it (Add or Cancel) returns focus to
+  // the New service button, which is rendered again, so keyboard users do not lose their place.
+  useEffect(() => {
+    if (composing) nameRef.current?.focus();
+    else if (wasComposing.current) newRef.current?.focus();
+    wasComposing.current = composing;
+  }, [composing]);
   // The undo offer disappears after a few seconds, like a system toast.
   useEffect(() => {
     if (!removed) return;
@@ -77,7 +85,7 @@ export default function Home() {
                 <span className="as-sr">Search services</span>
                 <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
               </label>
-              {composing ? null : <button type="button" className="as-button" onClick={() => setComposing(true)}><PlusIcon />New service</button>}
+              {composing ? null : <button ref={newRef} type="button" className="as-button" onClick={() => setComposing(true)}><PlusIcon />New service</button>}
             </div>
           </div>
 
