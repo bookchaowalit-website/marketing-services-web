@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SEED, addService, countAvailable, filterServices, parseServices, removeService } from "@/lib/services";
+import { SEED, addService, countAvailable, filterServices, parseServices, removeService, restoreService } from "@/lib/services";
 
 describe("parseServices", () => {
   it("returns null for missing, corrupt or non-array data so the sample is used", () => {
@@ -42,5 +42,18 @@ describe("ledger edits", () => {
     expect(countAvailable(SEED)).toBe(2);
     expect(removeService(SEED, "service-1").map((s) => s.id)).toEqual(["service-2", "service-3"]);
     expect(countAvailable(removeService(SEED, "service-1"))).toBe(1);
+  });
+});
+
+describe("restoreService (undo)", () => {
+  const [a, b, c] = SEED;
+  it("puts the item back before the row that followed it, even after new rows were added on top", () => {
+    const afterRemove = removeService(SEED, b.id);
+    const withNew = addService(afterRemove, { title: "New", body: "", status: "Draft" }, "new", 9);
+    expect(restoreService(withNew, b, c.id).map((s) => s.id)).toEqual(["new", a.id, b.id, c.id]);
+  });
+  it("appends when the following row is gone too, and never duplicates", () => {
+    expect(restoreService([a], c, null).map((s) => s.id)).toEqual([a.id, c.id]);
+    expect(restoreService([a, b], b, "missing").map((s) => s.id)).toEqual([a.id, b.id]);
   });
 });
