@@ -1,3 +1,11 @@
+# Services — design
+
+Since 2026-11-13 this app uses the shared App shell (`APP-SHELL.md`): calm light/dark theme,
+sidebar of lists, in-place composer, status pills and undoable remove. The earlier
+"Service / Ledger" print theme below is kept for history.
+
+---
+
 # DESIGN.md
 
 ## Overview
