@@ -15,11 +15,13 @@ export default function Home() {
   const [draft, setDraft] = useState<ServiceDraft>(EMPTY_DRAFT);
   // Undo remembers the item that followed the removed one, not an index, so rows added in the
   // meantime do not shift where it comes back.
-  const [removed, setRemoved] = useState<{ item: Service; beforeId: string | null } | null>(null);
+  const [removed, setRemoved] = useState<{ item: Service; beforeId: string | null; viaKeyboard: boolean } | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
   const newRef = useRef<HTMLButtonElement>(null);
   const wasComposing = useRef(false);
+  const undoRef = useRef<HTMLButtonElement>(null);
+  const [toastFocused, setToastFocused] = useState(false);
   const visible = useMemo(() => filterServices(services, filter, query), [filter, query, services]);
   const countOf = (status: StatusFilter) => (status === "All" ? services.length : services.filter((item) => item.status === status).length);
 
@@ -30,12 +32,22 @@ export default function Home() {
     else if (wasComposing.current) newRef.current?.focus();
     wasComposing.current = composing;
   }, [composing]);
-  // The undo offer disappears after a few seconds, like a system toast.
+  // The undo offer disappears after a few seconds, like a system toast, but never while the
+  // keyboard focus is on it. Removing with the keyboard moves focus to Undo so it is one key away
+  // (the Remove button that had focus is gone); a mouse removal leaves focus alone.
   useEffect(() => {
-    if (!removed) return;
+    if (removed?.viaKeyboard) undoRef.current?.focus();
+  }, [removed]);
+  useEffect(() => {
+    if (!removed || toastFocused) return;
     const timer = window.setTimeout(() => setRemoved(null), 6000);
     return () => window.clearTimeout(timer);
-  }, [removed]);
+  }, [removed, toastFocused]);
+  function closeToast() {
+    setRemoved(null);
+    setToastFocused(false);
+    newRef.current?.focus();
+  }
 
   function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -45,17 +57,17 @@ export default function Home() {
     setDraft(EMPTY_DRAFT);
     setComposing(false);
   }
-  function remove(item: Service) {
+  function remove(item: Service, viaKeyboard: boolean) {
     setServices((current) => removeService(current, item.id));
     const index = services.findIndex((entry) => entry.id === item.id);
-    setRemoved({ item, beforeId: services[index + 1]?.id ?? null });
+    setRemoved({ item, beforeId: services[index + 1]?.id ?? null, viaKeyboard });
     setAnnouncement(`Removed ${item.title}. Undo is available for a few seconds.`);
   }
   function undo() {
     if (!removed) return;
     const { item, beforeId } = removed;
     setServices((current) => restoreService(current, item, beforeId));
-    setRemoved(null);
+    closeToast();
     setAnnouncement(`Restored ${item.title}.`);
   }
 
@@ -126,7 +138,7 @@ export default function Home() {
                     {service.body ? <p>{service.body}</p> : null}
                   </div>
                   <Pill tone={TONE[service.status]}>{service.status}</Pill>
-                  <button type="button" className="as-plain as-danger" onClick={() => remove(service)} aria-label={`Remove ${service.title}`}>Remove</button>
+                  <button type="button" className="as-plain as-danger" onClick={(event) => remove(service, event.detail === 0)} aria-label={`Remove ${service.title}`}>Remove</button>
                 </li>
               ))}
             </ul>
@@ -146,9 +158,16 @@ export default function Home() {
 
       <p className="as-sr" role="status" aria-live="polite">{announcement}</p>
       {removed ? (
-        <div className="as-toast" role="group" aria-label="Undo remove">
+        <div
+          className="as-toast"
+          role="group"
+          aria-label="Undo remove"
+          onFocus={() => setToastFocused(true)}
+          onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setToastFocused(false); }}
+          onKeyDown={(event) => { if (event.key === "Escape") closeToast(); }}
+        >
           <span>Removed “{removed.item.title}”</span>
-          <button type="button" className="as-plain" onClick={undo}>Undo</button>
+          <button ref={undoRef} type="button" className="as-plain" onClick={undo}>Undo</button>
         </div>
       ) : null}
 
