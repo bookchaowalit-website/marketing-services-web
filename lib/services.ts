@@ -67,3 +67,13 @@ export function addService(items: Service[], draft: ServiceDraft, id: string, no
 export function removeService(items: Service[], id: string): Service[] {
   return items.filter((item) => item.id !== id);
 }
+
+/**
+ * Undo a removal: put `item` back just before the row that followed it (`beforeId`), or at the
+ * end when that row is gone too. Rows added since the removal do not shift where it lands.
+ */
+export function restoreService(items: Service[], item: Service, beforeId: string | null): Service[] {
+  if (items.some((entry) => entry.id === item.id)) return items;
+  const at = beforeId ? items.findIndex((entry) => entry.id === beforeId) : -1;
+  return at < 0 ? [...items, item] : [...items.slice(0, at), item, ...items.slice(at)];
+}

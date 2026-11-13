@@ -71,7 +71,7 @@
 .as-head h1 { margin: 0; font-size: clamp(28px, 4vw, 34px); font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
 .as-head p { margin: 4px 0 0; color: var(--as-muted); font-size: 15px; }
 .as-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.as-search input { width: min(240px, 100%); min-height: 44px; padding: 0 14px; border: 1px solid var(--as-line); border-radius: 980px; background: var(--as-surface); font-size: 15px; }
+.as-search input { width: min(240px, 100%); min-height: 44px; padding: 0 14px; border: 1px solid var(--as-line); border-radius: 980px; background: var(--as-surface); font-size: 16px; /* 16px stops iOS zooming on focus */ }
 .as-search input:focus-visible { outline: 3px solid var(--as-focus); outline-offset: 0; }
 
 /* Buttons */

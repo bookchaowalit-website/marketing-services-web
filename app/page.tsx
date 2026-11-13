@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AppFoot, AppTop, ListButton, Pill, PlusIcon, type Tone } from "@/components/app-shell";
-import { EMPTY_DRAFT, SEED, STATUSES, STORAGE_KEY, addService as addLine, filterServices, parseServices, removeService, type Service, type ServiceDraft, type ServiceStatus, type StatusFilter } from "@/lib/services";
+import { EMPTY_DRAFT, SEED, STATUSES, STORAGE_KEY, addService as addLine, filterServices, parseServices, removeService, restoreService, type Service, type ServiceDraft, type ServiceStatus, type StatusFilter } from "@/lib/services";
 import { useStoredState } from "@/lib/use-stored-state";
 
 const TONE: Record<ServiceStatus, Tone> = { Available: "green", Draft: "amber", Paused: "grey" };
@@ -13,7 +13,9 @@ export default function Home() {
   const [filter, setFilter] = useState<StatusFilter>("All");
   const [composing, setComposing] = useState(false);
   const [draft, setDraft] = useState<ServiceDraft>(EMPTY_DRAFT);
-  const [removed, setRemoved] = useState<{ item: Service; index: number } | null>(null);
+  // Undo remembers the item that followed the removed one, not an index, so rows added in the
+  // meantime do not shift where it comes back.
+  const [removed, setRemoved] = useState<{ item: Service; beforeId: string | null } | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
   const newRef = useRef<HTMLButtonElement>(null);
@@ -45,13 +47,14 @@ export default function Home() {
   }
   function remove(item: Service) {
     setServices((current) => removeService(current, item.id));
-    setRemoved({ item, index: services.findIndex((entry) => entry.id === item.id) });
+    const index = services.findIndex((entry) => entry.id === item.id);
+    setRemoved({ item, beforeId: services[index + 1]?.id ?? null });
     setAnnouncement(`Removed ${item.title}. Undo is available for a few seconds.`);
   }
   function undo() {
     if (!removed) return;
-    const { item, index } = removed;
-    setServices((current) => [...current.slice(0, index), item, ...current.slice(index)]);
+    const { item, beforeId } = removed;
+    setServices((current) => restoreService(current, item, beforeId));
     setRemoved(null);
     setAnnouncement(`Restored ${item.title}.`);
   }
@@ -78,7 +81,7 @@ export default function Home() {
           <div className="as-head">
             <div>
               <h1>{title}</h1>
-              <p>{visible.length} {visible.length === 1 ? "service" : "services"}{query.trim() ? ` matching “${query.trim()}”` : ""}</p>
+              <p aria-live="polite">{visible.length} {visible.length === 1 ? "service" : "services"}{query.trim() ? ` matching “${query.trim()}”` : ""}</p>
             </div>
             <div className="as-tools">
               <label className="as-search">
