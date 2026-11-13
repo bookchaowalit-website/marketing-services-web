@@ -68,6 +68,9 @@
 /* Grid items default to min-width:auto; 0 lets the phone list row scroll instead of widening the page. */
 .as-side, .as-main { min-width: 0; }
 .as-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; margin-bottom: 16px; }
+/* A long search term must wrap inside the head, not widen the page. */
+.as-head > div:first-child { min-width: 0; max-width: 100%; }
+.as-head p { overflow-wrap: anywhere; }
 .as-head h1 { margin: 0; font-size: clamp(28px, 4vw, 34px); font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
 .as-head p { margin: 4px 0 0; color: var(--as-muted); font-size: 15px; }
 .as-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

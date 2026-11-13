@@ -46,7 +46,8 @@ export default function Home() {
   function closeToast() {
     setRemoved(null);
     setToastFocused(false);
-    newRef.current?.focus();
+    // New service is not rendered while the composer is open; then go back to the composer.
+    (newRef.current ?? nameRef.current)?.focus();
   }
 
   function add(event: FormEvent<HTMLFormElement>) {

@@ -115,3 +115,12 @@ describe("remove and undo", () => {
     expect($(".as-toast")).toBeNull();
   });
 });
+
+describe("review fixes", () => {
+  it("Undo returns focus to the open composer when New service is hidden", () => {
+    press($('[aria-label="Remove Full-stack build"]')!, 0);
+    press(button("New service"));
+    press(button("Undo"));
+    expect(document.activeElement).toBe($(".as-composer input"));
+  });
+});
