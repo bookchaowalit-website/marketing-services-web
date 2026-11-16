@@ -67,6 +67,16 @@ describe("composer", () => {
 });
 
 describe("lists and search", () => {
+  // BOO-387: the search field had only a screen-reader label.
+  it("gives the search field a visible label that names it", () => {
+    const label = $(".as-search")!;
+    const text = $(".as-search-label")!;
+    expect(text.textContent).toBe("Search services");
+    expect(text.classList.contains("as-sr")).toBe(false);
+    expect(label.tagName).toBe("LABEL");
+    expect(label.contains($(".as-search input"))).toBe(true);
+  });
+
   it("filters by list and shows a no-match state for a search with no results", () => {
     press(button("Draft"));
     expect(rows()).toEqual(["Data workflow prototype"]);
