@@ -38,4 +38,3 @@ scan on every push and PR to `main`.
   (a visitor's own lines never leave the browser).
 - `lib/sentry.ts` + `instrumentation*.ts`: error reporting to Sentry, errors only, personal data stripped; off when
   `NEXT_PUBLIC_SENTRY_DSN` is unset.
-- `app/more-projects/page.tsx`: shared portfolio link page (copied per repository, not a package).

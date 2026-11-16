@@ -98,8 +98,8 @@ export default function Home() {
             </div>
             <div className="as-tools">
               <label className="as-search">
-                <span className="as-sr">Search services</span>
-                <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
+                <span className="as-search-label">Search services</span>
+                <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name or details" />
               </label>
               {composing ? null : <button ref={newRef} type="button" className="as-button" onClick={() => setComposing(true)}><PlusIcon />New service</button>}
             </div>
