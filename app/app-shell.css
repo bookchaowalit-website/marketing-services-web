@@ -150,3 +150,6 @@
   .as-segmented button { min-width: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .as *, .as *::before, .as *::after { transition: none !important; } }
+
+/* The top bar is sticky: keep skip-link targets and keyboard-focused controls clear of it when the page scrolls to them. */
+html { scroll-padding-top: 64px; scroll-padding-bottom: 16px; }
