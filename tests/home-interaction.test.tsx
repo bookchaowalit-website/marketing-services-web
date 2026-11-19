@@ -116,6 +116,40 @@ describe("remove and undo", () => {
     expect(rows()).not.toContain("Full-stack build");
   });
 
+  it("consecutive removes restore together with one Undo, each in its place", () => {
+    vi.useFakeTimers();
+    const before = rows();
+    press($('[aria-label="Remove Product interface audit"]')!, 1);
+    act(() => { vi.advanceTimersByTime(4000); });
+    press($('[aria-label="Remove Full-stack build"]')!, 1);
+    expect(rows()).toEqual(["Data workflow prototype"]);
+    expect($(".as-toast span")?.textContent).toBe("Removed 2 services");
+    expect(button("Undo").getAttribute("aria-label")).toBe("Undo remove of 2 services");
+    // The second removal restarted the 6 s window.
+    act(() => { vi.advanceTimersByTime(4000); });
+    press(button("Undo"), 1);
+    expect(rows()).toEqual(before);
+    expect($('[role="status"]')?.textContent).toBe("Restored 2 services.");
+    expect($(".as-toast")).toBeNull();
+  });
+
+  it("keyboard remove focuses Undo, also for the second removal in a batch", () => {
+    press($('[aria-label="Remove Full-stack build"]')!, 0);
+    expect(document.activeElement?.textContent).toBe("Undo");
+    press($('[aria-label="Remove Data workflow prototype"]')!, 0);
+    expect(document.activeElement).toBe(button("Undo"));
+    expect($(".as-toast span")?.textContent).toBe("Removed 2 services");
+    act(() => { $(".as-toast")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); });
+    expect(document.activeElement?.textContent).toContain("New service");
+  });
+
+  it("reserves the toast's height while it shows", () => {
+    press($('[aria-label="Remove Full-stack build"]')!, 1);
+    expect(document.documentElement.style.getPropertyValue("--as-toast-space")).toMatch(/px$/);
+    press(button("Undo"), 1);
+    expect(document.documentElement.style.getPropertyValue("--as-toast-space")).toBe("");
+  });
+
   it("a mouse removal leaves focus alone and the toast goes away after six seconds", () => {
     vi.useFakeTimers();
     press($('[aria-label="Remove Full-stack build"]')!, 1);

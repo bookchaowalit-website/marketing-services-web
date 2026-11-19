@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AppFoot, AppTop, ListButton, Pill, PlusIcon, type Tone } from "@/components/app-shell";
 import { EMPTY_DRAFT, SEED, STATUSES, STORAGE_KEY, addService as addLine, filterServices, parseServices, removeService, restoreService, type Service, type ServiceDraft, type ServiceStatus, type StatusFilter } from "@/lib/services";
 import { useStoredState } from "@/lib/use-stored-state";
 
 const TONE: Record<ServiceStatus, Tone> = { Available: "green", Draft: "amber", Paused: "grey" };
+// Undo remembers the item that followed the removed one, not an index, so rows added in the meantime do not shift
+// where it comes back.
+type RemovedEntry = { item: Service; beforeId: string | null };
+type RemovedBatch = { items: RemovedEntry[]; viaKeyboard: boolean };
+const removedLabel = (items: RemovedEntry[]) => (items.length === 1 ? `Removed “${items[0].item.title}”` : `Removed ${items.length} services`);
 
 export default function Home() {
   const [services, setServices] = useStoredState(STORAGE_KEY, SEED, parseServices);
@@ -13,9 +18,12 @@ export default function Home() {
   const [filter, setFilter] = useState<StatusFilter>("All");
   const [composing, setComposing] = useState(false);
   const [draft, setDraft] = useState<ServiceDraft>(EMPTY_DRAFT);
-  // Undo remembers the item that followed the removed one, not an index, so rows added in the
-  // meantime do not shift where it comes back.
-  const [removed, setRemoved] = useState<{ item: Service; beforeId: string | null; viaKeyboard: boolean } | null>(null);
+  // Every removal still inside the Undo window: one Undo puts them all back where they were.
+  const [removed, setRemovedState] = useState<RemovedBatch | null>(null);
+  // The latest batch, so two removals before a re-render still both land in it.
+  const removedRef = useRef<RemovedBatch | null>(null);
+  const setRemoved = (batch: RemovedBatch | null) => { removedRef.current = batch; setRemovedState(batch); };
+  const toastRef = useRef<HTMLDivElement>(null);
   const [announcement, setAnnouncement] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
   const newRef = useRef<HTMLButtonElement>(null);
@@ -42,9 +50,22 @@ export default function Home() {
   }, [removed]);
   useEffect(() => {
     if (!removed || toastFocused || toastHovered) return;
-    const timer = window.setTimeout(() => setRemoved(null), 6000);
+    const timer = window.setTimeout(() => { removedRef.current = null; setRemovedState(null); setToastHovered(false); }, 6000);
     return () => window.clearTimeout(timer);
   }, [removed, toastFocused, toastHovered]);
+  // While the toast shows, reserve its height (plus its 24px offset and a gap) at the bottom of the page and in
+  // scroll-padding, so the last rows and anything focused behind it can scroll clear of it.
+  const toastShown = removed !== null;
+  useLayoutEffect(() => {
+    const toast = toastRef.current;
+    if (!toastShown || !toast) return;
+    const rootStyle = document.documentElement.style;
+    const reserve = () => rootStyle.setProperty("--as-toast-space", `${toast.offsetHeight + 32}px`);
+    reserve();
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(reserve) : null;
+    observer?.observe(toast);
+    return () => { observer?.disconnect(); rootStyle.removeProperty("--as-toast-space"); };
+  }, [toastShown]);
   function closeToast() {
     setRemoved(null);
     setToastFocused(false);
@@ -62,17 +83,21 @@ export default function Home() {
     setComposing(false);
   }
   function remove(item: Service, viaKeyboard: boolean) {
-    setServices((current) => removeService(current, item.id));
     const index = services.findIndex((entry) => entry.id === item.id);
-    setRemoved({ item, beforeId: services[index + 1]?.id ?? null, viaKeyboard });
-    setAnnouncement(`Removed ${item.title}. Undo is available for a few seconds.`);
+    if (index < 0) return;
+    setServices((current) => removeService(current, item.id));
+    // Join the batch of removals still inside the Undo window.
+    const items = [...(removedRef.current?.items ?? []), { item, beforeId: services[index + 1]?.id ?? null }];
+    setRemoved({ items, viaKeyboard });
+    setAnnouncement(`${removedLabel(items)}. Undo is available for a few seconds.`);
   }
   function undo() {
-    if (!removed) return;
-    const { item, beforeId } = removed;
-    setServices((current) => restoreService(current, item, beforeId));
+    const items = removedRef.current?.items;
+    if (!items?.length) return;
+    // Latest removal first, so each row goes back before the row that followed it at the time.
+    setServices((current) => items.reduceRight((list, { item, beforeId }) => restoreService(list, item, beforeId), current));
     closeToast();
-    setAnnouncement(`Restored ${item.title}.`);
+    setAnnouncement(items.length === 1 ? `Restored ${items[0].item.title}.` : `Restored ${items.length} services.`);
   }
 
   function compose(status?: ServiceStatus) {
@@ -177,6 +202,7 @@ export default function Home() {
       <p className="as-sr" role="status" aria-live="polite">{announcement}</p>
       {removed ? (
         <div
+          ref={toastRef}
           className="as-toast"
           role="group"
           aria-label="Undo remove"
@@ -186,8 +212,8 @@ export default function Home() {
           onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setToastFocused(false); }}
           onKeyDown={(event) => { if (event.key === "Escape") closeToast(); }}
         >
-          <span>Removed “{removed.item.title}”</span>
-          <button ref={undoRef} type="button" className="as-plain" onClick={undo}>Undo</button>
+          <span>{removedLabel(removed.items)}</span>
+          <button ref={undoRef} type="button" className="as-plain" onClick={undo} aria-label={removed.items.length === 1 ? undefined : `Undo remove of ${removed.items.length} services`}>Undo</button>
         </div>
       ) : null}
 
