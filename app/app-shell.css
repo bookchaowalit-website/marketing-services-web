@@ -122,8 +122,8 @@
 .as-pill[data-tone="grey"] { color: var(--as-grey); background: var(--as-grey-bg); }
 .as-empty { padding: 32px 16px; color: var(--as-muted); font-size: 15px; text-align: center; }
 .as-empty strong { display: block; margin-bottom: 4px; color: var(--as-fg); font-size: 17px; }
-.as-empty .as-empty-action { display: flex; margin: 16px auto 0; }
-.as-hint { color: var(--as-muted); font-size: 13px; font-weight: 400; }
+.as-field-wrap { display: grid; gap: 6px; }
+.as-hint { margin: 0; color: var(--as-muted); font-size: 13px; font-weight: 400; }
 .as-intro { max-width: 60ch; line-height: 1.5; }
 .as-intro a { color: var(--as-accent); text-decoration: underline; text-underline-offset: 2px; }
 

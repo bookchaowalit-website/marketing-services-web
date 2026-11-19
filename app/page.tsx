@@ -103,7 +103,7 @@ export default function Home() {
           <div className="as-head">
             <div>
               <h1>{title}</h1>
-              <p className="as-intro">A demo catalog: add, edit and remove services freely, they stay in this browser. Want this kind of work done? Start at <a href="https://bookchaowalit.com/">bookchaowalit.com</a>.</p>
+              <p className="as-intro">A demo catalog: add and remove services freely, they stay in this browser. Want this kind of work done? Start at <a href="https://bookchaowalit.com/">bookchaowalit.com</a>.</p>
               <p aria-live="polite">{visible.length} {visible.length === 1 ? "service" : "services"}{query.trim() ? ` matching “${query.trim()}”` : ""}</p>
             </div>
             <div className="as-tools">
@@ -111,16 +111,19 @@ export default function Home() {
                 <span className="as-search-label">Search services</span>
                 <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name or details" />
               </label>
-              {composing ? null : <button ref={newRef} type="button" className="as-button" onClick={() => compose()}><PlusIcon />New service</button>}
+              {composing ? null : <button ref={newRef} type="button" className="as-button" onClick={() => compose(filter === "All" ? undefined : filter)}><PlusIcon />New service</button>}
             </div>
           </div>
 
           {composing ? (
             <form className="as-composer" onSubmit={add} aria-label="New service">
-              <label className="as-field">Name
-                <input ref={nameRef} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="e.g. Interface direction" autoComplete="off" aria-describedby="name-hint" />
-                <span id="name-hint" className="as-hint">{nameMissing ? "Name is required to add a service." : "Ready to add."}</span>
-              </label>
+              {/* The hint sits outside the label, so the field's name stays "Name"; it is only the description. */}
+              <div className="as-field-wrap">
+                <label className="as-field">Name
+                  <input ref={nameRef} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="e.g. Interface direction" autoComplete="off" aria-describedby="name-hint" />
+                </label>
+                <p id="name-hint" className="as-hint">{nameMissing ? "Name is required to add a service." : "Ready to add."}</p>
+              </div>
               <label className="as-field">Details
                 <textarea value={draft.body} onChange={(event) => setDraft({ ...draft, body: event.target.value })} placeholder="What does this help someone do?" />
               </label>
@@ -156,16 +159,13 @@ export default function Home() {
             </ul>
           ) : (
             <div className="as-list as-empty">
-              {query.trim() ? (
+              {/* An empty catalog comes first: a search left in the box must not hide "nothing yet". */}
+              {services.length === 0 ? (
+                <><strong>No services yet</strong>Press New service to add the first one.</>
+              ) : query.trim() ? (
                 <><strong>Nothing here</strong>No service in this list matches your search.</>
               ) : (
-                <>
-                  <strong>{services.length === 0 ? "No services yet" : `No ${filter.toLowerCase()} services`}</strong>
-                  {services.length === 0 ? "Add the first one." : `Add one with the ${filter} state.`}
-                  {composing ? null : (
-                    <button type="button" className="as-button as-empty-action" onClick={() => compose(filter === "All" ? undefined : filter)}><PlusIcon />New service</button>
-                  )}
-                </>
+                <><strong>{`No ${filter.toLowerCase()} services`}</strong>{`Press New service to add one; it starts as ${filter}.`}</>
               )}
             </div>
           )}

@@ -135,11 +135,13 @@ describe("review fixes", () => {
   });
 
   // 2026-11-18 review round 2.
-  it("an empty list without a search says what is missing and offers New service with that state", () => {
+  it("an empty list without a search says what is missing; the single New service starts in that state", () => {
     press(button("Paused"));
     expect(host.textContent).toContain("No paused services");
     expect(host.textContent).not.toContain("matches your search");
-    press($(".as-empty .as-button")!);
+    // One New service button only (Codex 2026-11-19), and it follows the list on screen.
+    expect([...host.querySelectorAll("button")].filter((b) => b.textContent?.includes("New service"))).toHaveLength(1);
+    press(button("New service"));
     expect(document.activeElement).toBe($(".as-composer input"));
     const paused = [...host.querySelectorAll(".as-composer .as-segmented button")].find((b) => b.textContent === "Paused")!;
     expect(paused.getAttribute("aria-pressed")).toBe("true");
@@ -150,6 +152,8 @@ describe("review fixes", () => {
     const name = $<HTMLInputElement>(".as-composer input")!;
     expect(name.getAttribute("aria-describedby")).toBe("name-hint");
     expect($("#name-hint")!.textContent).toBe("Name is required to add a service.");
+    // Outside the label: the field is named "Name" and only described by the hint.
+    expect(name.closest("label")!.textContent).toBe("Name");
     type(name, "Audit");
     expect($("#name-hint")!.textContent).toBe("Ready to add.");
   });
@@ -171,5 +175,21 @@ describe("review fixes", () => {
     expect(levels[0]).toBe("H1");
     expect(levels.filter((l) => l === "H1")).toHaveLength(1);
     expect(levels).not.toContain("H3");
+  });
+
+  it("New service in All starts as Available", () => {
+    press(button("New service"));
+    const available = [...host.querySelectorAll(".as-composer .as-segmented button")].find((b) => b.textContent === "Available")!;
+    expect(available.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("removing the last service under a leftover search says the catalog is empty, not 'no match'", () => {
+    type($<HTMLInputElement>(".as-search input")!, "Full-stack");
+    press($('[aria-label="Remove Full-stack build"]')!, 1);
+    type($<HTMLInputElement>(".as-search input")!, "");
+    for (const title of ["Product interface audit", "Data workflow prototype"]) press($(`[aria-label="Remove ${title}"]`)!, 1);
+    type($<HTMLInputElement>(".as-search input")!, "anything");
+    expect(host.textContent).toContain("No services yet");
+    expect(host.textContent).not.toContain("matches your search");
   });
 });
