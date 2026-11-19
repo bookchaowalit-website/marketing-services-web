@@ -1,7 +1,7 @@
 # App shell
 
 The shared calm, Apple-like look for list-style apps (services, todos, notes, reminders,
-habits, goals). Started 2026-11-13 with this app as the pilot. Each app is its own repo, so the
+habits, goals). Started 2026-11-13 with marketing-services-web as the pilot; todo-board was second, reminders third; checklists (a content library, no sidebar) fourth, notes fifth; journal (read-only, single column) sixth; this app (sidebar lists like services) is the seventh. Each app is its own repo, so the
 shell is copied in, not installed: take `app/app-shell.css` and `components/app-shell.tsx`.
 
 ## Rules

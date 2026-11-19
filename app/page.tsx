@@ -143,7 +143,7 @@ export default function Home() {
                 <span className="as-search-label">Search services</span>
                 <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name or details" />
               </label>
-              {composing ? null : <button ref={newRef} type="button" className="as-button" onClick={() => compose(filter === "All" ? undefined : filter)}><PlusIcon />New service</button>}
+              {composing ? null : <button ref={newRef} type="button" className="as-button" onClick={() => compose(filter === "All" ? undefined : filter)}><PlusIcon /><span className="as-button-text">New service</span></button>}
             </div>
           </div>
 

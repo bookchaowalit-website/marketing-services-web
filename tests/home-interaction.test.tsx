@@ -172,9 +172,14 @@ describe("remove and undo", () => {
   });
 
   it("the page CSS turns the measured toast space into bottom room and scroll-padding", () => {
-    const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
-    expect(css).toMatch(/html\s*\{\s*scroll-padding-bottom:\s*calc\(16px \+ var\(--as-toast-space, 0px\)\);/);
+    const css = readFileSync(join(process.cwd(), "app/app-shell.css"), "utf8");
+    expect(css).toMatch(/html\s*\{[^}]*scroll-padding-bottom:\s*calc\(16px \+ var\(--as-toast-space, 0px\)\);/);
     expect(css).toMatch(/\.as\s*\{\s*padding-bottom:\s*var\(--as-toast-space, 0px\);/);
+  });
+
+  it("the toast room comes from the shared shell, not a site-local copy", () => {
+    const local = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
+    expect(local).not.toMatch(/--as-toast-space/);
   });
 
   it("two removals before a re-render still restore each row in its place", () => {

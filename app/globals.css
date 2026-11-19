@@ -3,8 +3,18 @@
 
 html, body { margin: 0; background: var(--as-bg); }
 
-/* While the Undo toast shows, the page measures it (ResizeObserver → --as-toast-space) and leaves that much room
-   at the bottom and in scroll-padding, so the footer links and anything focused behind it can scroll clear.
-   Site-local: this copy of the App shell predates the rule (the source shell has it). */
-html { scroll-padding-bottom: calc(16px + var(--as-toast-space, 0px)); }
-.as { padding-bottom: var(--as-toast-space, 0px); }
+/* Site-local additions on top of the shared App shell (app/app-shell.css stays byte-identical to
+   productivity-ideas-web). Services shows a visible search label, an intro line, a name hint and h2 rows. */
+.as-side-title { margin: 0 0 8px 12px; color: var(--as-muted); font-size: 13px; font-weight: 600; }
+/* flex-end: the search label sits above its field, so the New button lines up with the field, not the label. */
+.as-tools { align-items: flex-end; }
+.as-search { display: grid; gap: 4px; }
+.as-search-label { padding-left: 14px; color: var(--as-muted); font-size: 13px; font-weight: 600; }
+/* Disabled keeps readable text (--as-grey on --as-selected, 6.5:1 light / 8.3:1 dark) instead of fading to ~1.9:1. */
+.as-button:disabled { opacity: 1; background: var(--as-selected); color: var(--as-grey); }
+.as-row h2 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.as-field-wrap { display: grid; gap: 6px; }
+.as-hint { margin: 0; color: var(--as-muted); font-size: 13px; font-weight: 400; }
+.as-head .as-intro { max-width: 60ch; margin-bottom: 0; line-height: 1.5; }
+.as-intro a { color: var(--as-accent); text-decoration: underline; text-underline-offset: 2px; }
+@media (max-width: 760px) { .as-side-title { display: none; } }
