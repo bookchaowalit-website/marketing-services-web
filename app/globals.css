@@ -2,3 +2,9 @@
 @import "./app-shell.css";
 
 html, body { margin: 0; background: var(--as-bg); }
+
+/* While the Undo toast shows, the page measures it (ResizeObserver → --as-toast-space) and leaves that much room
+   at the bottom and in scroll-padding, so the footer links and anything focused behind it can scroll clear.
+   Site-local: this copy of the App shell predates the rule (the source shell has it). */
+html { scroll-padding-bottom: calc(16px + var(--as-toast-space, 0px)); }
+.as { padding-bottom: var(--as-toast-space, 0px); }

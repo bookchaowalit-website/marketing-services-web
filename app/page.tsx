@@ -24,6 +24,9 @@ export default function Home() {
   const removedRef = useRef<RemovedBatch | null>(null);
   const setRemoved = (batch: RemovedBatch | null) => { removedRef.current = batch; setRemovedState(batch); };
   const toastRef = useRef<HTMLDivElement>(null);
+  // The list as of the latest removal, kept in step with each render.
+  const latestServices = useRef(services);
+  useLayoutEffect(() => { latestServices.current = services; }, [services]);
   const [announcement, setAnnouncement] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
   const newRef = useRef<HTMLButtonElement>(null);
@@ -83,11 +86,15 @@ export default function Home() {
     setComposing(false);
   }
   function remove(item: Service, viaKeyboard: boolean) {
-    const index = services.findIndex((entry) => entry.id === item.id);
+    // The latest list, also when two removals land before React re-renders, so each one records the row that
+    // really followed it.
+    const latest = latestServices.current;
+    const index = latest.findIndex((entry) => entry.id === item.id);
     if (index < 0) return;
+    latestServices.current = removeService(latest, item.id);
     setServices((current) => removeService(current, item.id));
     // Join the batch of removals still inside the Undo window.
-    const items = [...(removedRef.current?.items ?? []), { item, beforeId: services[index + 1]?.id ?? null }];
+    const items = [...(removedRef.current?.items ?? []), { item, beforeId: latest[index + 1]?.id ?? null }];
     setRemoved({ items, viaKeyboard });
     setAnnouncement(`${removedLabel(items)}. Undo is available for a few seconds.`);
   }

@@ -2,6 +2,8 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import Home from "@/app/page";
 import { resetStoredCache } from "@/lib/use-stored-state";
 
@@ -143,11 +145,47 @@ describe("remove and undo", () => {
     expect(document.activeElement?.textContent).toContain("New service");
   });
 
-  it("reserves the toast's height while it shows", () => {
-    press($('[aria-label="Remove Full-stack build"]')!, 1);
-    expect(document.documentElement.style.getPropertyValue("--as-toast-space")).toMatch(/px$/);
+  it("reserves the toast's measured height while it shows, following it when it resizes", () => {
+    let height = 48;
+    const heightSpy = vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains("as-toast") ? height : 0;
+    });
+    const observers: (() => void)[] = [];
+    vi.stubGlobal("ResizeObserver", class {
+      constructor(private callback: () => void) { observers.push(() => this.callback()); }
+      observe() {}
+      disconnect() {}
+    });
+    try {
+      press($('[aria-label="Remove Full-stack build"]')!, 1);
+      // Its height plus the 24px offset and a gap.
+      expect(document.documentElement.style.getPropertyValue("--as-toast-space")).toBe("80px");
+      height = 96; // the label wrapped to two lines
+      act(() => { observers.forEach((notify) => notify()); });
+      expect(document.documentElement.style.getPropertyValue("--as-toast-space")).toBe("128px");
+      press(button("Undo"), 1);
+      expect(document.documentElement.style.getPropertyValue("--as-toast-space")).toBe("");
+    } finally {
+      heightSpy.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("the page CSS turns the measured toast space into bottom room and scroll-padding", () => {
+    const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
+    expect(css).toMatch(/html\s*\{\s*scroll-padding-bottom:\s*calc\(16px \+ var\(--as-toast-space, 0px\)\);/);
+    expect(css).toMatch(/\.as\s*\{\s*padding-bottom:\s*var\(--as-toast-space, 0px\);/);
+  });
+
+  it("two removals before a re-render still restore each row in its place", () => {
+    const before = rows();
+    act(() => {
+      $('[aria-label="Remove Product interface audit"]')!.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 }));
+      $('[aria-label="Remove Full-stack build"]')!.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 }));
+    });
+    expect(rows()).toEqual(["Data workflow prototype"]);
     press(button("Undo"), 1);
-    expect(document.documentElement.style.getPropertyValue("--as-toast-space")).toBe("");
+    expect(rows()).toEqual(before);
   });
 
   it("a mouse removal leaves focus alone and the toast goes away after six seconds", () => {
