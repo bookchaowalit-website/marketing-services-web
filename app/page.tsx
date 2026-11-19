@@ -22,6 +22,8 @@ export default function Home() {
   const wasComposing = useRef(false);
   const undoRef = useRef<HTMLButtonElement>(null);
   const [toastFocused, setToastFocused] = useState(false);
+  // A mouse resting on the toast pauses the countdown too (WCAG 2.2.1), not only keyboard focus.
+  const [toastHovered, setToastHovered] = useState(false);
   const visible = useMemo(() => filterServices(services, filter, query), [filter, query, services]);
   const countOf = (status: StatusFilter) => (status === "All" ? services.length : services.filter((item) => item.status === status).length);
 
@@ -39,13 +41,14 @@ export default function Home() {
     if (removed?.viaKeyboard) undoRef.current?.focus();
   }, [removed]);
   useEffect(() => {
-    if (!removed || toastFocused) return;
+    if (!removed || toastFocused || toastHovered) return;
     const timer = window.setTimeout(() => setRemoved(null), 6000);
     return () => window.clearTimeout(timer);
-  }, [removed, toastFocused]);
+  }, [removed, toastFocused, toastHovered]);
   function closeToast() {
     setRemoved(null);
     setToastFocused(false);
+    setToastHovered(false);
     // New service is not rendered while the composer is open; then go back to the composer.
     (newRef.current ?? nameRef.current)?.focus();
   }
@@ -72,7 +75,13 @@ export default function Home() {
     setAnnouncement(`Restored ${item.title}.`);
   }
 
+  function compose(status?: ServiceStatus) {
+    setDraft(status ? { ...EMPTY_DRAFT, status } : EMPTY_DRAFT);
+    setComposing(true);
+  }
+
   const title = filter === "All" ? "All services" : filter;
+  const nameMissing = !draft.title.trim();
   const lists: { value: StatusFilter; tone?: Tone }[] = [{ value: "All" }, ...STATUSES.map((status) => ({ value: status, tone: TONE[status] }))];
 
   return (
@@ -82,7 +91,7 @@ export default function Home() {
 
       <div className="as-body">
         <aside className="as-side" aria-label="Lists">
-          <h2>Lists</h2>
+          <p className="as-side-title" aria-hidden="true">Lists</p>
           <ul className="as-lists">
             {lists.map(({ value, tone }) => (
               <ListButton key={value} label={value === "All" ? "All services" : value} count={countOf(value)} tone={tone} current={filter === value} onSelect={() => setFilter(value)} />
@@ -94,6 +103,7 @@ export default function Home() {
           <div className="as-head">
             <div>
               <h1>{title}</h1>
+              <p className="as-intro">A demo catalog: add, edit and remove services freely, they stay in this browser. Want this kind of work done? Start at <a href="https://bookchaowalit.com/">bookchaowalit.com</a>.</p>
               <p aria-live="polite">{visible.length} {visible.length === 1 ? "service" : "services"}{query.trim() ? ` matching “${query.trim()}”` : ""}</p>
             </div>
             <div className="as-tools">
@@ -101,14 +111,15 @@ export default function Home() {
                 <span className="as-search-label">Search services</span>
                 <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name or details" />
               </label>
-              {composing ? null : <button ref={newRef} type="button" className="as-button" onClick={() => setComposing(true)}><PlusIcon />New service</button>}
+              {composing ? null : <button ref={newRef} type="button" className="as-button" onClick={() => compose()}><PlusIcon />New service</button>}
             </div>
           </div>
 
           {composing ? (
             <form className="as-composer" onSubmit={add} aria-label="New service">
               <label className="as-field">Name
-                <input ref={nameRef} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="e.g. Interface direction" autoComplete="off" />
+                <input ref={nameRef} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="e.g. Interface direction" autoComplete="off" aria-describedby="name-hint" />
+                <span id="name-hint" className="as-hint">{nameMissing ? "Name is required to add a service." : "Ready to add."}</span>
               </label>
               <label className="as-field">Details
                 <textarea value={draft.body} onChange={(event) => setDraft({ ...draft, body: event.target.value })} placeholder="What does this help someone do?" />
@@ -124,7 +135,7 @@ export default function Home() {
                 </div>
                 <div className="as-composer-actions">
                   <button type="button" className="as-plain" onClick={() => { setComposing(false); setDraft(EMPTY_DRAFT); }}>Cancel</button>
-                  <button type="submit" className="as-button" disabled={!draft.title.trim()}>Add</button>
+                  <button type="submit" className="as-button" disabled={nameMissing}>Add</button>
                 </div>
               </div>
             </form>
@@ -135,7 +146,7 @@ export default function Home() {
               {visible.map((service) => (
                 <li className="as-row" key={service.id}>
                   <div>
-                    <h3>{service.title}</h3>
+                    <h2>{service.title}</h2>
                     {service.body ? <p>{service.body}</p> : null}
                   </div>
                   <Pill tone={TONE[service.status]}>{service.status}</Pill>
@@ -145,10 +156,16 @@ export default function Home() {
             </ul>
           ) : (
             <div className="as-list as-empty">
-              {services.length === 0 ? (
-                <><strong>No services yet</strong>Press New service to add the first one.</>
-              ) : (
+              {query.trim() ? (
                 <><strong>Nothing here</strong>No service in this list matches your search.</>
+              ) : (
+                <>
+                  <strong>{services.length === 0 ? "No services yet" : `No ${filter.toLowerCase()} services`}</strong>
+                  {services.length === 0 ? "Add the first one." : `Add one with the ${filter} state.`}
+                  {composing ? null : (
+                    <button type="button" className="as-button as-empty-action" onClick={() => compose(filter === "All" ? undefined : filter)}><PlusIcon />New service</button>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -164,6 +181,8 @@ export default function Home() {
           role="group"
           aria-label="Undo remove"
           onFocus={() => setToastFocused(true)}
+          onMouseEnter={() => setToastHovered(true)}
+          onMouseLeave={() => setToastHovered(false)}
           onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setToastFocused(false); }}
           onKeyDown={(event) => { if (event.key === "Escape") closeToast(); }}
         >

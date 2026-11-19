@@ -25,4 +25,8 @@ describe("home page on the App shell", () => {
     expect(html).toContain('href="https://bookchaowalit.com/"');
     expect(html).not.toMatch(/ledger/i);
   });
+
+  it("explains it is a demo and links visitors who want the work done to the hub", () => {
+    expect(html).toMatch(/class="as-intro"[^>]*>A demo catalog.*href="https:\/\/bookchaowalit.com\/">bookchaowalit.com<\/a>/);
+  });
 });

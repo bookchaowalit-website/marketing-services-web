@@ -13,7 +13,7 @@ let host: HTMLDivElement;
 
 const $ = <T extends Element = HTMLElement>(selector: string) => host.querySelector(selector) as T | null;
 const button = (text: string) => [...host.querySelectorAll("button")].find((b) => b.textContent?.trim().includes(text)) as HTMLButtonElement;
-const rows = () => [...host.querySelectorAll(".as-row h3")].map((h) => h.textContent);
+const rows = () => [...host.querySelectorAll(".as-row h2")].map((h) => h.textContent);
 const press = (el: Element, detail = 0) => act(() => { el.dispatchEvent(new MouseEvent("click", { bubbles: true, detail })); });
 function type(el: HTMLInputElement | HTMLTextAreaElement, value: string) {
   const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
@@ -132,5 +132,44 @@ describe("review fixes", () => {
     press(button("New service"));
     press(button("Undo"));
     expect(document.activeElement).toBe($(".as-composer input"));
+  });
+
+  // 2026-11-18 review round 2.
+  it("an empty list without a search says what is missing and offers New service with that state", () => {
+    press(button("Paused"));
+    expect(host.textContent).toContain("No paused services");
+    expect(host.textContent).not.toContain("matches your search");
+    press($(".as-empty .as-button")!);
+    expect(document.activeElement).toBe($(".as-composer input"));
+    const paused = [...host.querySelectorAll(".as-composer .as-segmented button")].find((b) => b.textContent === "Paused")!;
+    expect(paused.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("tells why Add is disabled and links the hint to the Name field", () => {
+    press(button("New service"));
+    const name = $<HTMLInputElement>(".as-composer input")!;
+    expect(name.getAttribute("aria-describedby")).toBe("name-hint");
+    expect($("#name-hint")!.textContent).toBe("Name is required to add a service.");
+    type(name, "Audit");
+    expect($("#name-hint")!.textContent).toBe("Ready to add.");
+  });
+
+  it("a mouse resting on the toast keeps Undo open; leaving restarts the countdown", () => {
+    vi.useFakeTimers();
+    press($('[aria-label="Remove Full-stack build"]')!, 1);
+    const toast = $(".as-toast")!;
+    act(() => { toast.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })); });
+    act(() => { vi.advanceTimersByTime(10000); });
+    expect($(".as-toast")).not.toBeNull();
+    act(() => { toast.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: document.body })); });
+    act(() => { vi.advanceTimersByTime(6000); });
+    expect($(".as-toast")).toBeNull();
+  });
+
+  it("keeps the heading outline in order: one h1, then h2 row titles, no h3", () => {
+    const levels = [...host.querySelectorAll("h1, h2, h3")].map((h) => h.tagName);
+    expect(levels[0]).toBe("H1");
+    expect(levels.filter((l) => l === "H1")).toHaveLength(1);
+    expect(levels).not.toContain("H3");
   });
 });
